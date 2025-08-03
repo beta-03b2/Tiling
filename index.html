@@ -2,45 +2,57 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>画像タイル生成ツール</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f9f9f9;
+      background: #f0f2f5;
+      margin: 0;
       padding: 20px;
-      text-align: center;
       color: #333;
     }
 
     h1 {
       color: #4a90e2;
-      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.8em;
     }
 
-    .form-container {
+    .container {
+      max-width: 600px;
+      margin: auto;
       background: white;
       padding: 20px;
-      border-radius: 10px;
-      max-width: 500px;
-      margin: auto;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 0.95em;
     }
 
     input[type="file"],
     input[type="number"],
     button {
-      width: 90%;
-      padding: 10px;
-      margin: 10px auto;
-      font-size: 16px;
+      width: 100%;
+      font-size: 1rem;
+      margin-top: 5px;
+      padding: 12px;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
       box-sizing: border-box;
     }
 
     button {
       background-color: #4a90e2;
       color: white;
+      font-weight: bold;
+      margin-top: 20px;
       border: none;
       cursor: pointer;
     }
@@ -49,79 +61,94 @@
       background-color: #357ab7;
     }
 
-    #outputCanvas {
-      margin-top: 30px;
+    canvas {
+      width: 100%;
       max-width: 100%;
+      margin-top: 20px;
       border: 1px solid #ccc;
     }
 
     #downloadLink {
-      display: block;
-      margin-top: 20px;
-      font-size: 16px;
+      display: none;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 1rem;
       color: #007acc;
       text-decoration: none;
     }
 
-    @media (max-width: 600px) {
-      input, button {
-        width: 100%;
-      }
+    #downloadLink:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 500px) {
+      body { padding: 10px; }
+      .container { padding: 15px; }
+      h1 { font-size: 1.5em; }
     }
   </style>
 </head>
 <body>
   <h1>画像タイル生成ツール</h1>
 
-  <div class="form-container">
-    <input type="file" id="imageInput" accept="image/*" required><br>
-    <p>幅(px)</p>
-    <input type="number" id="canvasWidth" placeholder="出力画像の幅 (px)" required>
-    <p>高さ(px)</p>
-    <input type="number" id="canvasHeight" placeholder="出力画像の高さ (px)" required>
-    <p>タイルの大きさ(px)</p>
-    <input type="number" id="tileSize" placeholder="タイルサイズ (px)" required>
-    <button onclick="generateTiledImage()">生成</button>
-    <a id="downloadLink" style="display:none" download="tiled_image.png">⬇️ 生成された画像をダウンロード</a>
+  <div class="container">
+    <label for="imageInput">画像ファイルを選択</label>
+    <input type="file" id="imageInput" accept="image/*" required>
+
+    <label for="canvasWidth">出力画像の幅 (px)</label>
+    <input type="number" id="canvasWidth" required>
+
+    <label for="canvasHeight">出力画像の高さ (px)</label>
+    <input type="number" id="canvasHeight" required>
+
+    <label for="tileWidth">タイルの横幅 (px)</label>
+    <input type="number" id="tileWidth" required>
+
+    <button onclick="generateTiledImage()">生成する</button>
+
+    <canvas id="outputCanvas"></canvas>
+    <a id="downloadLink" download="tiled_image.png">⬇️ 生成された画像をダウンロード</a>
   </div>
 
-  <canvas id="outputCanvas"></canvas>
-
   <script>
-    // ページ読み込み時に画面サイズを初期値としてセット
-window.addEventListener('DOMContentLoaded', () => {
-  const widthInput = document.getElementById('canvasWidth');
-  const heightInput = document.getElementById('canvasHeight');
-
-  // 画面の物理サイズ（例：1920x1080など）を自動設定
-  widthInput.value = window.screen.width;
-  heightInput.value = window.screen.height;
-});
     let uploadedImage = null;
 
     document.getElementById('imageInput').addEventListener('change', function (e) {
       const reader = new FileReader();
       reader.onload = function (event) {
         uploadedImage = new Image();
+        uploadedImage.onload = function () {
+          // タイルの横幅に画像の横幅を初期値として設定
+          document.getElementById('tileWidth').value = uploadedImage.width;
+        };
         uploadedImage.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
     });
 
+    // 画面サイズを初期値として設定
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('canvasWidth').value = window.screen.width;
+      document.getElementById('canvasHeight').value = window.screen.height;
+    });
+
     function generateTiledImage() {
       if (!uploadedImage) {
-        alert("画像を選択してください。");
+        alert("まず画像を選択してください。");
         return;
       }
 
       const width = parseInt(document.getElementById('canvasWidth').value);
       const height = parseInt(document.getElementById('canvasHeight').value);
-      const tileSize = parseInt(document.getElementById('tileSize').value);
+      const tileWidth = parseInt(document.getElementById('tileWidth').value);
 
-      if (!width || !height || !tileSize) {
-        alert("すべての数値を入力してください。");
+      if (!width || !height || !tileWidth) {
+        alert("すべての項目を入力してください。");
         return;
       }
+
+      // 元画像の比率を保ったまま高さを算出
+      const tileHeight = uploadedImage.height * (tileWidth / uploadedImage.width);
 
       const canvas = document.getElementById('outputCanvas');
       const ctx = canvas.getContext('2d');
@@ -129,11 +156,12 @@ window.addEventListener('DOMContentLoaded', () => {
       canvas.width = width;
       canvas.height = height;
 
+      // タイル画像作成
       const tileCanvas = document.createElement('canvas');
-      tileCanvas.width = tileSize;
-      tileCanvas.height = tileSize;
+      tileCanvas.width = tileWidth;
+      tileCanvas.height = tileHeight;
       const tileCtx = tileCanvas.getContext('2d');
-      tileCtx.drawImage(uploadedImage, 0, 0, tileSize, tileSize);
+      tileCtx.drawImage(uploadedImage, 0, 0, tileWidth, tileHeight);
 
       const pattern = ctx.createPattern(tileCanvas, 'repeat');
       ctx.fillStyle = pattern;
