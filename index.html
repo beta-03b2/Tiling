@@ -75,8 +75,11 @@
 
   <div class="form-container">
     <input type="file" id="imageInput" accept="image/*" required><br>
+    <p>幅(px)</p>
     <input type="number" id="canvasWidth" placeholder="出力画像の幅 (px)" required>
+    <p>高さ(px)</p>
     <input type="number" id="canvasHeight" placeholder="出力画像の高さ (px)" required>
+    <p>タイルの大きさ(px)</p>
     <input type="number" id="tileSize" placeholder="タイルサイズ (px)" required>
     <button onclick="generateTiledImage()">生成</button>
     <a id="downloadLink" style="display:none" download="tiled_image.png">⬇️ 生成された画像をダウンロード</a>
