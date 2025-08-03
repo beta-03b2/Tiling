@@ -85,6 +85,15 @@
   <canvas id="outputCanvas"></canvas>
 
   <script>
+    // ページ読み込み時に画面サイズを初期値としてセット
+window.addEventListener('DOMContentLoaded', () => {
+  const widthInput = document.getElementById('canvasWidth');
+  const heightInput = document.getElementById('canvasHeight');
+
+  // 画面の物理サイズ（例：1920x1080など）を自動設定
+  widthInput.value = window.screen.width;
+  heightInput.value = window.screen.height;
+});
     let uploadedImage = null;
 
     document.getElementById('imageInput').addEventListener('change', function (e) {
