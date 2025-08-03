@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>画像タイル生成ツール</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+      text-align: center;
+      color: #333;
+    }
+
+    h1 {
+      color: #4a90e2;
+      margin-bottom: 20px;
+    }
+
+    .form-container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="file"],
+    input[type="number"],
+    button {
+      width: 90%;
+      padding: 10px;
+      margin: 10px auto;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #357ab7;
+    }
+
+    #outputCanvas {
+      margin-top: 30px;
+      max-width: 100%;
+      border: 1px solid #ccc;
+    }
+
+    #downloadLink {
+      display: block;
+      margin-top: 20px;
+      font-size: 16px;
+      color: #007acc;
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      input, button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>画像タイル生成ツール</h1>
+
+  <div class="form-container">
+    <input type="file" id="imageInput" accept="image/*" required><br>
+    <input type="number" id="canvasWidth" placeholder="出力画像の幅 (px)" required>
+    <input type="number" id="canvasHeight" placeholder="出力画像の高さ (px)" required>
+    <input type="number" id="tileSize" placeholder="タイルサイズ (px)" required>
+    <button onclick="generateTiledImage()">生成</button>
+    <a id="downloadLink" style="display:none" download="tiled_image.png">⬇️ 生成された画像をダウンロード</a>
+  </div>
+
+  <canvas id="outputCanvas"></canvas>
+
+  <script>
+    let uploadedImage = null;
+
+    document.getElementById('imageInput').addEventListener('change', function (e) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        uploadedImage = new Image();
+        uploadedImage.src = event.target.result;
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    });
+
+    function generateTiledImage() {
+      if (!uploadedImage) {
+        alert("画像を選択してください。");
+        return;
+      }
+
+      const width = parseInt(document.getElementById('canvasWidth').value);
+      const height = parseInt(document.getElementById('canvasHeight').value);
+      const tileSize = parseInt(document.getElementById('tileSize').value);
+
+      if (!width || !height || !tileSize) {
+        alert("すべての数値を入力してください。");
+        return;
+      }
+
+      const canvas = document.getElementById('outputCanvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const tileCanvas = document.createElement('canvas');
+      tileCanvas.width = tileSize;
+      tileCanvas.height = tileSize;
+      const tileCtx = tileCanvas.getContext('2d');
+      tileCtx.drawImage(uploadedImage, 0, 0, tileSize, tileSize);
+
+      const pattern = ctx.createPattern(tileCanvas, 'repeat');
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, width, height);
+
+      const downloadLink = document.getElementById('downloadLink');
+      downloadLink.href = canvas.toDataURL("image/png");
+      downloadLink.style.display = "block";
+    }
+  </script>
+</body>
+</html>
