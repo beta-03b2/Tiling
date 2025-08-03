@@ -16,7 +16,7 @@
     h1 {
       color: #4a90e2;
       text-align: center;
-      font-size: 1.8em;
+      font-size: clamp(1.5rem, 4vw, 2rem);
     }
 
     .container {
@@ -31,39 +31,23 @@
     label {
       display: block;
       margin-top: 15px;
-      text-align: left;
       font-weight: bold;
-      font-size: 0.95em;
+      font-size: 1rem;
     }
 
     input[type="file"],
-    input[type="number"],
-    button {
+    input[type="number"] {
       width: 100%;
       font-size: 1rem;
       margin-top: 5px;
-      padding: 12px;
+      padding: 14px;
       border: 1px solid #ccc;
       border-radius: 8px;
       box-sizing: border-box;
     }
 
-    button {
-      background-color: #4a90e2;
-      color: white;
-      font-weight: bold;
-      margin-top: 20px;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #357ab7;
-    }
-
     canvas {
       width: 100%;
-      max-width: 100%;
       margin-top: 20px;
       border: 1px solid #ccc;
     }
@@ -81,10 +65,14 @@
       text-decoration: underline;
     }
 
-    @media (max-width: 500px) {
-      body { padding: 10px; }
-      .container { padding: 15px; }
-      h1 { font-size: 1.5em; }
+    @media (max-width: 600px) {
+      input, label {
+        font-size: 1.1rem;
+      }
+
+      input[type="number"] {
+        padding: 16px;
+      }
     }
   </style>
 </head>
@@ -104,8 +92,6 @@
     <label for="tileWidth">タイルの横幅 (px)</label>
     <input type="number" id="tileWidth" required>
 
-    <button onclick="generateTiledImage()">生成する</button>
-
     <canvas id="outputCanvas"></canvas>
     <a id="downloadLink" download="tiled_image.png">⬇️ 生成された画像をダウンロード</a>
   </div>
@@ -113,61 +99,65 @@
   <script>
     let uploadedImage = null;
 
+    const canvas = document.getElementById('outputCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const widthInput = document.getElementById('canvasWidth');
+    const heightInput = document.getElementById('canvasHeight');
+    const tileWidthInput = document.getElementById('tileWidth');
+    const downloadLink = document.getElementById('downloadLink');
+
+    // 初期値に画面サイズ
+    window.addEventListener('DOMContentLoaded', () => {
+      widthInput.value = window.screen.width;
+      heightInput.value = window.screen.height;
+    });
+
     document.getElementById('imageInput').addEventListener('change', function (e) {
       const reader = new FileReader();
       reader.onload = function (event) {
         uploadedImage = new Image();
         uploadedImage.onload = function () {
-          // タイルの横幅に画像の横幅を初期値として設定
-          document.getElementById('tileWidth').value = uploadedImage.width;
+          tileWidthInput.value = uploadedImage.width;
+          updateCanvas(); // 初回描画
         };
         uploadedImage.src = event.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
     });
 
-    // 画面サイズを初期値として設定
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('canvasWidth').value = window.screen.width;
-      document.getElementById('canvasHeight').value = window.screen.height;
+    [widthInput, heightInput, tileWidthInput].forEach(input => {
+      input.addEventListener('input', () => {
+        updateCanvas();
+      });
     });
 
-    function generateTiledImage() {
-      if (!uploadedImage) {
-        alert("まず画像を選択してください。");
-        return;
-      }
+    function updateCanvas() {
+      if (!uploadedImage) return;
 
-      const width = parseInt(document.getElementById('canvasWidth').value);
-      const height = parseInt(document.getElementById('canvasHeight').value);
-      const tileWidth = parseInt(document.getElementById('tileWidth').value);
+      const width = parseInt(widthInput.value);
+      const height = parseInt(heightInput.value);
+      const tileWidth = parseInt(tileWidthInput.value);
 
-      if (!width || !height || !tileWidth) {
-        alert("すべての項目を入力してください。");
-        return;
-      }
+      if (!width || !height || !tileWidth) return;
 
-      // 元画像の比率を保ったまま高さを算出
       const tileHeight = uploadedImage.height * (tileWidth / uploadedImage.width);
-
-      const canvas = document.getElementById('outputCanvas');
-      const ctx = canvas.getContext('2d');
 
       canvas.width = width;
       canvas.height = height;
 
-      // タイル画像作成
       const tileCanvas = document.createElement('canvas');
       tileCanvas.width = tileWidth;
       tileCanvas.height = tileHeight;
       const tileCtx = tileCanvas.getContext('2d');
+
       tileCtx.drawImage(uploadedImage, 0, 0, tileWidth, tileHeight);
 
       const pattern = ctx.createPattern(tileCanvas, 'repeat');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = pattern;
       ctx.fillRect(0, 0, width, height);
 
-      const downloadLink = document.getElementById('downloadLink');
       downloadLink.href = canvas.toDataURL("image/png");
       downloadLink.style.display = "block";
     }
